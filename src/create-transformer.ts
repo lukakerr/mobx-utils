@@ -56,9 +56,11 @@ export function createTransformer<A, B>(
         const sourceType = typeof sourceObject
         const prettifiedName = debugNameGenerator
             ? debugNameGenerator(sourceObject)
-            : `Transformer-${(<any>transformer).name}-${
+            : process.env.NODE_ENV !== "production"
+            ? `Transformer-${(<any>transformer).name}-${
                   sourceType === "string" || sourceType === "number" ? sourceObject : "object"
               }`
+            : undefined
         const expr = computed(
             () => {
                 return (latestValue = transformer(sourceObject))

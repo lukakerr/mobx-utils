@@ -89,7 +89,10 @@ export function computedFn<T extends (...args: any[]) => any>(
             },
             {
                 ...opts,
-                name: `computedFn(${opts.name || fn.name}#${++i})`,
+                name:
+                    process.env.NODE_ENV !== "production"
+                        ? `computedFn(${opts.name || fn.name}#${++i})`
+                        : opts.name,
             }
         )
         entry.set(c)

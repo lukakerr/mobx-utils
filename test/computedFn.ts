@@ -194,3 +194,31 @@ test("supports onCleanup", () => {
 test("should not allow actions", () => {
     expect(() => computedFn(action(() => {}))).toThrow("action")
 })
+
+describe("debug names", () => {
+    const nodeEnv = process.env.NODE_ENV
+    afterEach(() => {
+        process.env.NODE_ENV = nodeEnv
+    })
+
+    function dependencyNames(...fns: (() => unknown)[]) {
+        const dispose = autorun(() => fns.forEach((fn) => fn()))
+        const names = getDependencyTree(dispose).dependencies!.map((d) => d.name)
+        dispose()
+        return names
+    }
+
+    test("are generated outside production", () => {
+        expect(dependencyNames(computedFn(function double() {}))).toEqual(["computedFn(double#1)"])
+    })
+
+    test("are not generated in production", () => {
+        process.env.NODE_ENV = "production"
+        expect(
+            dependencyNames(
+                computedFn(() => {}),
+                computedFn(() => {}, { name: "custom" })
+            )
+        ).toEqual([expect.stringMatching(/^ComputedValue/), "custom"])
+    })
+})

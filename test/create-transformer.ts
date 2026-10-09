@@ -1415,3 +1415,34 @@ test("should not memorize outside reactive context", () => {
     transformer.mockClear()
     onCleanup.mockClear()
 })
+
+describe("debug names", () => {
+    const nodeEnv = process.env.NODE_ENV
+    afterEach(() => {
+        process.env.NODE_ENV = nodeEnv
+    })
+
+    function dependencyNames(...transformers: ((input: object) => unknown)[]) {
+        const input = {}
+        const dispose = m.autorun(() => transformers.forEach((t) => t(input)))
+        const names = m.getDependencyTree(dispose).dependencies!.map((d) => d.name)
+        dispose()
+        return names
+    }
+
+    test("are generated outside production", () => {
+        expect(dependencyNames(createTransformer(function double(_: object) {}))).toEqual([
+            "Transformer-double-object",
+        ])
+    })
+
+    test("are not generated in production", () => {
+        process.env.NODE_ENV = "production"
+        expect(
+            dependencyNames(
+                createTransformer((_: object) => {}),
+                createTransformer((_: object) => {}, { debugNameGenerator: () => "custom" })
+            )
+        ).toEqual([expect.stringMatching(/^ComputedValue/), "custom"])
+    })
+})
